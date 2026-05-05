@@ -1,18 +1,18 @@
 import React from "react";
-import "@/App.css";
+import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/context/AuthContext";
-import { Toaster } from "@/components/ui/sonner";
-import Landing from "@/pages/Landing";
-import Marketplace from "@/pages/Marketplace";
-import ListingDetail from "@/pages/ListingDetail";
-import CreateListing from "@/pages/CreateListing";
-import Chat from "@/pages/Chat";
-import Login from "@/pages/Login";
-import Register from "@/pages/Register";
-import CRC from "@/pages/CRC";
-import Dashboard from "@/pages/Dashboard";
-import Trading from "@/pages/Trading";
+import { AuthProvider } from "./context/AuthContext";
+import { Toaster } from "./components/ui/sonner";
+import Landing from "./pages/Landing";
+import Marketplace from "./pages/Marketplace";
+import ListingDetail from "./pages/ListingDetail";
+import CreateListing from "./pages/CreateListing";
+import Chat from "./pages/Chat";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import CRC from "./pages/CRC";
+import Dashboard from "./pages/Dashboard";
+import Trading from "./pages/Trading";
 
 function App() {
   return (
