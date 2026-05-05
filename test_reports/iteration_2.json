@@ -1,0 +1,46 @@
+{
+  "summary": "Phase 2 (Live Cotton Commodity Pricing) end-to-end testing — 18/18 backend pytest cases pass (market quote/history/stats, WS snapshot, alerts CRUD + isolation, Phase 1 regression including /auth/login, /listings, /conversations, /ai/assist). Frontend /trading page fully verified: KPIs render correct values, all 5 range buttons trigger correct /api/market/cotton/history?range=<R> calls, chart SVG renders via recharts, chart type toggles work, demo buyer can log in, create a price alert (POST /api/alerts → 200 with id/direction/threshold), alert appears in sidebar list with proper data-testid, delete button fires DELETE /api/alerts/{id} → 200 and UI clears, and client-side validation shows 'Enter a valid price' toast on empty input. No 4xx/5xx API errors observed during entire UI session.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/market/cotton/history", "issue": "Range param is case-insensitive (server upper-cases input) which is not documented in the spec. Acceptable, but worth noting."},
+      {"endpoint": "POST /api/alerts", "issue": "Missing validation that threshold > 0; negative/zero thresholds are accepted and will never (or always) trigger."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Trading (sidebar)", "issues": ["Sonner toast on alert-create success appears behind the top navigation on narrow widths (visible on screenshot — 'Enter a valid price' overlaps header). Minor; consider raising toaster z-index or repositioning."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_market_alerts.py",
+    "/app/backend/tests/test_cottonhub.py",
+    "/app/test_reports/pytest/phase2_results.xml"
+  ],
+  "action_items": [
+    "(Optional) Validate threshold > 0 in POST /api/alerts (return 400).",
+    "(Optional) Add data-testid='chart-area' | 'chart-line' | 'chart-candle' — already present; no action.",
+    "(Optional) Raise z-index of Sonner toaster above the sticky header so alerts are not visually occluded."
+  ],
+  "critical_code_review_comments": [
+    "server.py is now ~984 lines — starting to feel heavy. Recommend splitting: routers/auth.py, routers/listings.py, routers/conversations.py, routers/market.py, routers/alerts.py, services/market_sim.py.",
+    "CottonMarketSimulator.tick() uses a fresh random.Random() each call — fine for MVP (non-deterministic drift as intended), but worth a comment clarifying the deterministic-on-startup + random-on-tick design.",
+    "evaluate_alerts() queries all untriggered alerts every minute with no user/symbol filter — OK for MVP, but add an index on {triggered:1} and filter by symbol once multiple commodities are added.",
+    "Market WS endpoint has no auth — intentional (public snapshot) — documented in request note. ✓",
+    "Alert model has no symbol field in AlertCreate payload; server hard-codes 'COTTON'. Fine for Phase 2 but must be parameterised before Phase 3.",
+    "Frontend Trading.jsx useEffect WS cleanup closes the socket on every `range` change (since `range` is in deps) — this re-establishes the WS on every range click, losing the snapshot until next tick. Consider separating the WS effect from the range-dependent append logic via a ref.",
+    "MongoDB projections correctly exclude _id across all endpoints. ✓"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_market_alerts.py"
+  ],
+  "success_rate": {"backend": "100% (18/18 Phase 2 + regression)", "frontend": "100% (all Phase 2 /trading flows verified)"},
+  "test_credentials": "demo@cottonhub.com / demo1234 (buyer) — confirmed working",
+  "seed_data_creation": "No new seed created. Tests used existing seeded demo buyer; TEST alerts created are self-cleaned in the suite.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Phase 2 is 100% green. Backend tests live in /app/backend/tests/test_market_alerts.py (18 cases) + /app/backend/tests/test_cottonhub.py (Phase 1 regression, 26 cases). Market WS at /api/market/ws is public and sends a 'snapshot' frame on connect — test verifies connect+snapshot without waiting for the 60s tick. Price alerts are scoped per-user via JWT; cross-user isolation verified. Frontend Trading.jsx WS re-opens on every range change (minor inefficiency, noted in code review).",
+  "rca of the issue": "N/A — no issues found."
+}

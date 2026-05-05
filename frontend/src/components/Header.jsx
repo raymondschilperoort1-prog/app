@@ -33,6 +33,7 @@ export const Header = () => {
 
         <nav className="hidden md:flex items-center gap-1">
           {link("/marketplace", "Marketplace")}
+          {link("/trading", "Trading")}
           {link("/crc", "CRC Token")}
           {user && link("/dashboard", "Dashboard")}
         </nav>

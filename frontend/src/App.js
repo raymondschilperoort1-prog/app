@@ -12,6 +12,7 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import CRC from "@/pages/CRC";
 import Dashboard from "@/pages/Dashboard";
+import Trading from "@/pages/Trading";
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/crc" element={<CRC />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/trading" element={<Trading />} />
           </Routes>
           <Toaster richColors position="top-right" />
         </BrowserRouter>

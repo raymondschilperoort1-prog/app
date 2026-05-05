@@ -14,6 +14,9 @@ import bcrypt
 import asyncio
 
 from emergentintegrations.llm.chat import LlmChat, UserMessage
+import random
+import math
+from collections import deque
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -503,6 +506,306 @@ async def websocket_endpoint(websocket: WebSocket, conversation_id: str, token: 
         await ws_manager.disconnect(conversation_id, websocket)
 
 
+# ===================== COTTON MARKET SIMULATOR =====================
+
+class CottonMarketSimulator:
+    """Deterministic random-walk simulator for cotton spot price ($/kg).
+
+    Generates 1-year of daily candles, 30-day of hourly, and 24h of minute candles.
+    Ticks forward every 60s in the background loop. When ALPHA_VANTAGE_KEY is set
+    in .env, this can be replaced with a real fetcher in `tick()`.
+    """
+
+    def __init__(self):
+        self.minute_candles = deque(maxlen=1440)
+        self.hourly_candles = deque(maxlen=720)
+        self.daily_candles = deque(maxlen=365)
+        self.current_price = 1.95
+        self.last_tick = None
+        self.subscribers: List[WebSocket] = []
+        self.sub_lock = asyncio.Lock()
+        self._init_history()
+
+    @staticmethod
+    def _candle(t: datetime, o: float, h: float, l: float, c: float, v: int) -> dict:
+        return {
+            "t": int(t.timestamp() * 1000),
+            "o": round(o, 4), "h": round(h, 4), "l": round(l, 4), "c": round(c, 4),
+            "v": int(v),
+        }
+
+    def _init_history(self):
+        rng = random.Random(2026_02)
+        now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+
+        # 1-year daily candles
+        price = 1.78
+        day_start = (now - timedelta(days=365)).replace(hour=0, minute=0)
+        day_closes = []
+        for i in range(365):
+            day = day_start + timedelta(days=i)
+            drift = 0.0003
+            vol = 0.013
+            seasonal = 0.0009 * math.sin((i / 365) * 2 * math.pi)
+            change = rng.gauss(drift, vol) + seasonal
+            o = price
+            c = max(0.5, price * (1 + change))
+            h = max(o, c) * (1 + abs(rng.gauss(0, 0.004)))
+            l = min(o, c) * (1 - abs(rng.gauss(0, 0.004)))
+            v = max(8000, int(rng.gauss(58000, 14000)))
+            self.daily_candles.append(self._candle(day, o, h, l, c, v))
+            day_closes.append(c)
+            price = c
+
+        # 30-day hourly candles (extrapolate from last 30 daily closes)
+        rng_h = random.Random(2026_03)
+        for d_idx in range(30):
+            base = day_closes[-30 + d_idx]
+            next_close = day_closes[-29 + d_idx] if d_idx < 29 else self.current_price
+            for hour in range(24):
+                t = (now - timedelta(days=30 - d_idx) + timedelta(hours=hour)).replace(minute=0)
+                ratio = hour / 24
+                center = base + (next_close - base) * ratio
+                noise = rng_h.gauss(0, 0.003) * center
+                o = center + rng_h.gauss(0, 0.002) * center
+                c = center + noise
+                h = max(o, c) + abs(rng_h.gauss(0, 0.002)) * center
+                l = min(o, c) - abs(rng_h.gauss(0, 0.002)) * center
+                v = max(500, int(rng_h.gauss(2400, 600)))
+                self.hourly_candles.append(self._candle(t, o, h, l, c, v))
+
+        # 24h minute candles
+        rng_m = random.Random(2026_04)
+        last_close = day_closes[-1]
+        for minute in range(1440):
+            t = now - timedelta(minutes=1440 - minute)
+            change = rng_m.gauss(0, 0.0006) * last_close
+            o = last_close
+            c = last_close + change
+            h = max(o, c) + abs(rng_m.gauss(0, 0.0004)) * last_close
+            l = min(o, c) - abs(rng_m.gauss(0, 0.0004)) * last_close
+            v = max(20, int(rng_m.gauss(45, 14)))
+            self.minute_candles.append(self._candle(t, o, h, l, c, v))
+            last_close = c
+
+        self.current_price = last_close
+        self.last_tick = now
+
+    def tick(self) -> dict:
+        """Advance simulator by one minute. Returns the latest candle."""
+        now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+        rng = random.Random()
+        prev_close = self.current_price
+        change = rng.gauss(0, 0.0007) * prev_close
+        o = prev_close
+        c = max(0.3, prev_close + change)
+        h = max(o, c) + abs(rng.gauss(0, 0.0005)) * prev_close
+        l = min(o, c) - abs(rng.gauss(0, 0.0005)) * prev_close
+        v = max(20, int(rng.gauss(48, 16)))
+        candle = self._candle(now, o, h, l, c, v)
+        self.minute_candles.append(candle)
+        self.current_price = c
+        self.last_tick = now
+
+        # rebuild rolling hourly aggregate every 60 ticks
+        if now.minute == 0:
+            cutoff = now - timedelta(hours=1)
+            window = [m for m in self.minute_candles if m["t"] >= int(cutoff.timestamp() * 1000)]
+            if window:
+                self.hourly_candles.append(self._candle(
+                    now,
+                    window[0]["o"],
+                    max(m["h"] for m in window),
+                    min(m["l"] for m in window),
+                    window[-1]["c"],
+                    sum(m["v"] for m in window),
+                ))
+        return candle
+
+    def quote(self) -> dict:
+        last = self.minute_candles[-1] if self.minute_candles else None
+        first_24h = self.minute_candles[0] if self.minute_candles else None
+        prev_close = first_24h["c"] if first_24h else self.current_price
+        change = self.current_price - prev_close
+        change_pct = (change / prev_close * 100) if prev_close else 0
+        h24 = max((m["h"] for m in self.minute_candles), default=self.current_price)
+        l24 = min((m["l"] for m in self.minute_candles), default=self.current_price)
+        v24 = sum(m["v"] for m in self.minute_candles)
+        return {
+            "symbol": "COTTON",
+            "price": round(self.current_price, 4),
+            "change_24h": round(change, 4),
+            "change_pct_24h": round(change_pct, 3),
+            "high_24h": round(h24, 4),
+            "low_24h": round(l24, 4),
+            "volume_24h": v24,
+            "currency": "USD",
+            "unit": "kg",
+            "ts": int((self.last_tick or datetime.now(timezone.utc)).timestamp() * 1000),
+        }
+
+    def history(self, range_key: str) -> List[dict]:
+        if range_key == "1H":
+            return list(self.minute_candles)[-60:]
+        if range_key == "24H":
+            # downsample 1440 → ~144 (every 10 min)
+            arr = list(self.minute_candles)
+            return arr[::10]
+        if range_key == "7D":
+            return list(self.hourly_candles)[-168:]
+        if range_key == "30D":
+            arr = list(self.hourly_candles)
+            return arr[::3]  # every 3 hours
+        if range_key == "1Y":
+            return list(self.daily_candles)
+        return list(self.minute_candles)[-60:]
+
+    async def broadcast(self, payload: dict):
+        async with self.sub_lock:
+            conns = list(self.subscribers)
+        for ws in conns:
+            try:
+                await ws.send_json(payload)
+            except Exception:
+                pass
+
+    async def add_subscriber(self, ws: WebSocket):
+        async with self.sub_lock:
+            self.subscribers.append(ws)
+
+    async def remove_subscriber(self, ws: WebSocket):
+        async with self.sub_lock:
+            if ws in self.subscribers:
+                self.subscribers.remove(ws)
+
+
+market_sim = CottonMarketSimulator()
+
+
+async def market_loop():
+    while True:
+        try:
+            await asyncio.sleep(60)
+            candle = market_sim.tick()
+            await market_sim.broadcast({"type": "tick", "candle": candle, "quote": market_sim.quote()})
+            await evaluate_alerts(market_sim.current_price)
+        except asyncio.CancelledError:
+            break
+        except Exception:
+            logger.exception("market_loop error")
+
+
+# ===================== MARKET ENDPOINTS =====================
+
+@api_router.get("/market/cotton/quote")
+async def market_quote():
+    return market_sim.quote()
+
+
+@api_router.get("/market/cotton/history")
+async def market_history(range: str = "24H"):
+    range_key = range.upper()
+    if range_key not in {"1H", "24H", "7D", "30D", "1Y"}:
+        raise HTTPException(status_code=400, detail="Invalid range")
+    return {"range": range_key, "candles": market_sim.history(range_key)}
+
+
+@api_router.get("/market/cotton/stats")
+async def market_stats():
+    q = market_sim.quote()
+    minutes = list(market_sim.minute_candles)
+    if len(minutes) > 1:
+        rets = []
+        for i in range(1, len(minutes)):
+            p = minutes[i - 1]["c"]
+            c = minutes[i]["c"]
+            if p > 0:
+                rets.append((c - p) / p)
+        mean = sum(rets) / len(rets) if rets else 0
+        var = sum((r - mean) ** 2 for r in rets) / len(rets) if rets else 0
+        vol = math.sqrt(var) * math.sqrt(1440) * 100
+    else:
+        vol = 0
+    return {**q, "volatility_24h_pct": round(vol, 3)}
+
+
+# ===================== PRICE ALERTS =====================
+
+class AlertCreate(BaseModel):
+    direction: str  # 'above' or 'below'
+    threshold: float
+
+
+@api_router.post("/alerts")
+async def create_alert(payload: AlertCreate, current: dict = Depends(get_current_user)):
+    if payload.direction not in {"above", "below"}:
+        raise HTTPException(status_code=400, detail="direction must be 'above' or 'below'")
+    doc = {
+        "id": str(uuid.uuid4()),
+        "user_id": current["id"],
+        "symbol": "COTTON",
+        "direction": payload.direction,
+        "threshold": float(payload.threshold),
+        "triggered": False,
+        "triggered_at": None,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.alerts.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+
+@api_router.get("/alerts")
+async def list_alerts(current: dict = Depends(get_current_user)):
+    cursor = db.alerts.find({"user_id": current["id"]}, {"_id": 0}).sort("created_at", -1)
+    return await cursor.to_list(length=200)
+
+
+@api_router.delete("/alerts/{alert_id}")
+async def delete_alert(alert_id: str, current: dict = Depends(get_current_user)):
+    res = await db.alerts.delete_one({"id": alert_id, "user_id": current["id"]})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    return {"ok": True}
+
+
+async def evaluate_alerts(price: float):
+    cursor = db.alerts.find({"triggered": False}, {"_id": 0})
+    alerts = await cursor.to_list(length=1000)
+    now_iso = datetime.now(timezone.utc).isoformat()
+    for a in alerts:
+        triggered = (
+            (a["direction"] == "above" and price >= a["threshold"]) or
+            (a["direction"] == "below" and price <= a["threshold"])
+        )
+        if triggered:
+            await db.alerts.update_one(
+                {"id": a["id"]},
+                {"$set": {"triggered": True, "triggered_at": now_iso}},
+            )
+            await market_sim.broadcast({
+                "type": "alert",
+                "alert": {**a, "triggered": True, "triggered_at": now_iso, "price": price},
+            })
+
+
+# ===================== MARKET WEBSOCKET =====================
+
+@api_router.websocket("/market/ws")
+async def market_ws(websocket: WebSocket):
+    await websocket.accept()
+    await market_sim.add_subscriber(websocket)
+    try:
+        # send snapshot
+        await websocket.send_json({"type": "snapshot", "quote": market_sim.quote()})
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        await market_sim.remove_subscriber(websocket)
+    except Exception:
+        await market_sim.remove_subscriber(websocket)
+
+
 # ===================== SEED =====================
 
 SEED_USERS = [
@@ -656,6 +959,7 @@ async def seed_if_empty():
 @app.on_event("startup")
 async def on_startup():
     await seed_if_empty()
+    asyncio.create_task(market_loop())
 
 
 @api_router.get("/")
