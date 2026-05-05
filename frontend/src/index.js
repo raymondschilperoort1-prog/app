@@ -1,5 +1,7 @@
+import React from "react";
+
 function App() {
-  return <div>WORKING</div>;
+  return <div>App loaded</div>;
 }
 
 export default App;
