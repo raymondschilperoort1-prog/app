@@ -1,0 +1,146 @@
+{
+  "theme_and_archetype": {
+    "theme": "light",
+    "archetype": "1 (Organic & Earthy)",
+    "rationale": "For a B2B circular textile marketplace, trust, sustainability, and physical materiality are paramount. The design must feel grounded, tactile, and transparent—avoiding clinical 'SaaS' coldness or excessive 'fintech' gloss."
+  },
+  "typography": {
+    "heading_font": "Satoshi",
+    "body_font": "Work Sans",
+    "rules": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl font-medium tracking-tight text-[#1A231E]",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl font-medium tracking-tight text-[#1A231E]",
+      "h3": "text-xl sm:text-2xl font-medium tracking-tight text-[#1A231E]",
+      "body": "text-base leading-relaxed text-[#4A5043]",
+      "labels": "text-xs font-semibold tracking-[0.1em] uppercase text-[#6B7262]",
+      "notes": "Do not use 'Inter' for headings. Use 'Satoshi' for authoritative yet approachable B2B headings. Use 'Work Sans' for clear tabular data and body text."
+    }
+  },
+  "colors": {
+    "background": {
+      "base": "#F9F8F6",
+      "surface": "#FFFFFF",
+      "surface_alt": "#F0EBE1"
+    },
+    "text": {
+      "primary": "#1A231E",
+      "secondary": "#4A5043",
+      "muted": "#6B7262"
+    },
+    "brand": {
+      "primary": "#2E4D3A",
+      "primary_hover": "#22392B",
+      "accent": "#C06A4A",
+      "accent_hover": "#A85B3F"
+    },
+    "border": {
+      "default": "#EAE6DF",
+      "focus": "#2E4D3A"
+    },
+    "status": {
+      "success": "#3B5C47",
+      "warning": "#D4A373",
+      "error": "#9E473D"
+    },
+    "rules": {
+      "tinting": "Never use pure grayscale. All grays must be tinted with a warm earthy hue (e.g., #4A5043).",
+      "contrast": "Ensure text meets APCA standards. Brand primary (#2E4D3A) should only be used for high-emphasis actions."
+    }
+  },
+  "spacing_and_layout": {
+    "philosophy": "Generous Spacing Philosophy. Use 2-3x more spacing than typical designs to give the dense B2B data breathing room.",
+    "container_padding": "p-8 md:p-12 lg:p-16",
+    "card_padding": "p-6",
+    "bento_grid": {
+      "marketing": "grid-cols-1 md:grid-cols-8 lg:grid-cols-12 gap-8 to gap-12. Asymmetrical balance.",
+      "dashboard": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6. Dense, data-heavy, but perfectly aligned."
+    }
+  },
+  "surface_strategies": {
+    "cards_and_widgets": "Flat solid background (`bg-white`), crisp 1px border (`border-[#EAE6DF]`), minimal rounded corners (`rounded-lg`). No muddy drop shadows. On hover, use a slight lift (`-translate-y-1`) and subtle ambient shadow (`shadow-md`).",
+    "header": "Solid background (`bg-[#F9F8F6]/95`), backdrop blur (`backdrop-blur-sm`), 1px bottom border. Do NOT use transparent headers over images without gradient overlays.",
+    "inputs": "Flat, sharp borders (`border-[#EAE6DF]`), subtle focus rings (`focus:ring-2 focus:ring-[#2E4D3A]/20`)."
+  },
+  "chat_ui_guidelines": {
+    "structure": "Vinted-style real-time layout. Two-pane layout on desktop (List on left, Conversation on right). Full-screen thread on mobile.",
+    "bubbles": {
+      "buyer_left": "bg-white border border-[#EAE6DF] text-[#1A231E] rounded-2xl rounded-bl-sm",
+      "seller_right": "bg-[#F0EBE1] text-[#1A231E] rounded-2xl rounded-br-sm"
+    },
+    "ai_assist_button": "Prominent floating or inline button in the input area. Style: `bg-[#C06A4A] text-white hover:bg-[#A85B3F] rounded-full px-4 py-2 flex items-center gap-2 shadow-sm`. Text: 'Spark AI Assist'.",
+    "negotiation_cards": "Use structured cards within the chat for formal offers (e.g., 'Offer: $1.20/kg for 5000kg'). Style these as distinctly separated bento blocks inside the chat stream."
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-[#2E4D3A] text-white hover:bg-[#22392B] rounded-md px-6 py-3 font-medium transition-colors",
+      "secondary": "bg-transparent border border-[#2E4D3A] text-[#2E4D3A] hover:bg-[#2E4D3A]/5 rounded-md px-6 py-3 font-medium transition-colors",
+      "accent": "bg-[#C06A4A] text-white hover:bg-[#A85B3F] rounded-md px-6 py-3 font-medium transition-colors"
+    },
+    "badges": {
+      "certification": "bg-[#F0EBE1] text-[#2E4D3A] text-xs font-semibold px-2 py-1 rounded border border-[#EAE6DF]",
+      "origin": "bg-white border border-[#EAE6DF] text-[#4A5043] text-xs font-semibold px-2 py-1 rounded"
+    },
+    "tables": "Shadcn tables customized with `border-[#EAE6DF]` headers, alternating soft row backgrounds (`even:bg-[#F9F8F6]`), and right-aligned numeric data."
+  },
+  "media_urls": {
+    "hero_background": {
+      "url": "https://images.unsplash.com/photo-1761069183877-fe29a212e5eb?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDN8MHwxfHNlYXJjaHwxfHxyYXclMjBjb3R0b24lMjBmaWVsZHxlbnwwfHx8fDE3Nzc5NjAyMDB8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Sunlight shining through a cotton field at sunrise.",
+      "usage": "Landing page hero section background. MUST use a gradient overlay (bg-black/30) to ensure text readability."
+    },
+    "investor_logistics": {
+      "url": "https://images.pexels.com/photos/3856433/pexels-photo-3856433.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Aerial shot of colorful shipping containers.",
+      "usage": "Investor page or 'Global Reach' section on the landing page."
+    },
+    "dashboard_texture": {
+      "url": "https://images.pexels.com/photos/36013228/pexels-photo-36013228.png?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Detailed close-up of a light beige woven textile.",
+      "usage": "Subtle background texture for the CRC token page or specific feature cards. Lower opacity to 10%."
+    },
+    "product_raw_cotton": {
+      "url": "https://images.unsplash.com/photo-1762112464284-db2e871a9f4f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDN8MHwxfHNlYXJjaHwyfHxyYXclMjBjb3R0b24lMjBmaWVsZHxlbnwwfHx8fDE3Nzc5NjAyMDB8MA&ixlib=rb-4.1.0&q=85",
+      "description": "A field of cotton plants with white bolls.",
+      "usage": "Product listing thumbnail placeholder for raw cotton."
+    },
+    "product_recycled_fabric": {
+      "url": "https://images.pexels.com/photos/36320425/pexels-photo-36320425.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Intricate blue and white woven fabric.",
+      "usage": "Product listing thumbnail placeholder for recycled fabrics."
+    },
+    "avatar_seller": {
+      "url": "https://images.pexels.com/photos/36645466/pexels-photo-36645466.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Confident businessman posing in modern office.",
+      "usage": "Seller profile picture in the chat UI and listing detail page."
+    },
+    "avatar_buyer": {
+      "url": "https://images.unsplash.com/photo-1629507208649-70919ca33793?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxNzV8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMHBvcnRyYWl0fGVufDB8fHx8MTc3Nzk2MDIwMHww&ixlib=rb-4.1.0&q=85",
+      "description": "Man in blue button-up shirt.",
+      "usage": "Buyer profile picture in the chat UI."
+    }
+  },
+  "pages": {
+    "landing": "Hero with full-bleed cotton field image, massive Satoshi typography. Value prop bento grid for Buyers/Sellers/Investors. CRC token teaser banner.",
+    "marketplace": "Sidebar filters (Type, Origin, Certs). Main area: 3-column grid of product cards. Product cards emphasize high-quality images and clear typography for MOQ/Price.",
+    "listing_detail": "Split layout: Sticky left column for large product gallery. Scrollable right column for specs, certifications, seller info, and 'Contact Seller' primary CTA.",
+    "create_listing": "Multi-step form utilizing Shadcn Form primitives. Clean, wizard-style flow. Focus on uploading certifications and defining Incoterms.",
+    "chat": "Full height layout (`h-[calc(100vh-header)]`). Left sidebar for message threads. Main area for Vinted-style chat. Sticky top header with listing summary. Sticky bottom input with AI assist trigger.",
+    "profile": "Verification badge prominent. Tabbed layout for 'Active Listings', 'Reviews', 'Company Info'.",
+    "crc_token": "Editorial layout. Use the beige woven texture background. Clear data visualizations (Shadcn Charts) showing token utility and ecosystem rewards.",
+    "dashboard": "Strict bento grid (Mode B). 'Control Room' for tracking active negotiations, listing views, and CRC token balance."
+  },
+  "icons": {
+    "library": "lucide-react",
+    "usage": "Use simple, line-based icons. Maintain stroke-width 1.5 or 2 for clarity."
+  },
+  "testing": {
+    "attributes": "All interactive elements MUST include a `data-testid` attribute (e.g., `data-testid=\"contact-seller-button\"`)."
+  },
+  "instructions_to_main_agent": [
+    "Use pure HTML + Tailwind for the marketing landing page structure.",
+    "Use Shadcn components for all forms, modals, tables, and the dashboard.",
+    "DO NOT use 'Inter' font. Import and configure 'Satoshi' and 'Work Sans'.",
+    "Implement the Chat UI using the specific bubble styles defined in `chat_ui_guidelines`. Ensure the AI Assist button stands out using the Terracotta accent color.",
+    "NEVER use placeholder text for images. ONLY use the provided `media_urls`."
+  ]
+}
