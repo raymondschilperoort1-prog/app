@@ -1,48 +1,62 @@
 # CottonHub — Product Requirements Document
 
 **Last updated:** Feb 2026
-**Status:** MVP v1 live ✅
+**Status:** Phase 2 live ✅
 
 ## Problem Statement
-Global B2B marketplace for cotton trading — Vinted-style with integrated real-time chat, AI negotiation assistant, and CRC (CottonRecycleCoin) token story for circular textile economy. Users: buyers (sourcing), sellers (listing + closing), investors (market narrative), recyclers (CRC rewards).
+Global B2B marketplace for cotton trading — Vinted-style with integrated real-time chat, AI negotiation assistant, CRC token narrative, and live commodity pricing dashboard.
 
 ## User Personas
-- **Buyer** — apparel/textile brand sourcing raw cotton, yarn, or recycled fabric by origin, certification, MOQ.
-- **Seller** — mill/farm/recycler listing product globally with certifications and Incoterms.
-- **Investor** — evaluating marketplace economics (take-rate, GMV, network effects).
-- **Recycler** — earning CRC for verified recycling activity.
+- **Buyer** — apparel/textile brand sourcing raw cotton, yarn, or recycled fabric.
+- **Seller** — mill/farm/recycler listing product globally.
+- **Trader** — monitoring cotton spot prices, setting alerts, timing buys.
+- **Investor** — evaluating marketplace economics + CRC token.
+- **Recycler** — earning CRC for verified recycling.
 
 ## Core Requirements (static)
-- Listings: title, product_type, origin, specs (GSM, fiber length, grade), MOQ, price/unit, certifications, Incoterms, description.
-- Real-time chat per listing conversation (buyer ↔ seller), WebSocket + REST hybrid.
-- AI assist (GPT-5.2) — reply, negotiate, optimize listing.
-- JWT auth + user profiles with verification/ratings.
-- CRC utility token narrative page.
-- Earthy/natural design system (Satoshi + Work Sans, #2E4D3A brand, #C06A4A accent).
+- Listings with full B2B specs + AI assist for replies/negotiation/optimization.
+- Real-time chat (WebSocket) per listing conversation.
+- JWT auth + user profiles with verification.
+- CRC utility token narrative.
+- **Live cotton commodity pricing dashboard** with charts, alerts, WebSocket tick stream.
+- Earthy/natural design (Satoshi + Work Sans, brand #2E4D3A, accent #C06A4A).
 
 ## Implemented (Feb 2026)
-- ✅ Backend FastAPI + Mongo, JWT auth (pyjwt + bcrypt), seed data (3 users, 4 listings).
-- ✅ `/api/auth/*`, `/api/listings` (CRUD + filters), `/api/conversations`, `/api/conversations/:id/messages`, `/api/ai/assist`, `/api/ws/:id?token=` WebSocket.
-- ✅ Frontend pages: Landing, Marketplace (filters), Listing Detail, Create Listing (w/ Spark AI optimize), Chat (Vinted-style + WebSocket + Spark AI), Login, Register, CRC, Dashboard.
-- ✅ GPT-5.2 via Emergent LLM key (emergentintegrations).
-- ✅ Design guidelines followed: Satoshi/Work Sans fonts, earthy palette, asymmetric bento, chat bubble styling.
-- ✅ Testing: 26/26 backend pytest passing; frontend renders all pages.
+
+### Phase 1 — Marketplace + Chat MVP
+- ✅ Auth (JWT + bcrypt), seed data (3 users + 4 listings).
+- ✅ Listings CRUD + filters; Conversations + Messages WebSocket.
+- ✅ Spark AI assist (GPT-5.2 via Emergent LLM key) — reply / negotiate / optimize_listing.
+- ✅ Pages: Landing, Marketplace, ListingDetail, CreateListing, Chat, Login, Register, CRC, Dashboard.
+- ✅ 26/26 backend pytest passing.
+
+### Phase 2 — Live Commodity Pricing Dashboard
+- ✅ `CottonMarketSimulator` — deterministic 1Y daily / 30D hourly / 24H minute OHLC seed + 60s tick loop.
+- ✅ `/api/market/cotton/quote`, `/history?range=...`, `/stats`.
+- ✅ `/api/market/ws` public WebSocket — broadcasts `tick` + `alert` events.
+- ✅ Price alerts: `POST/GET/DELETE /api/alerts` (JWT-protected, threshold>0 validated).
+- ✅ Frontend `/trading` page — area/line/candle chart toggles, range selector (1H/24H/7D/30D/1Y), KPIs (high, low, volume, volatility), live ticker, alerts manager. Custom width hook replaces ResponsiveContainer.
+- ✅ 18/18 backend pytest passing (Phase 2) + Phase 1 regression intact.
 
 ## Prioritized Backlog
-**P0 (next)**
-- Multi-image upload per listing (object storage).
-- Seller profile page (/profile/:id) with active listings + reviews.
+
+**P0 (next phase candidates)**
+- Admin Panel + Compliance: admin role, user management, KYC/blacklist, audit log, fraud flags, transaction monitoring.
+- Trading System Upgrade: instant buy, escrow, Stripe payments, order tracking.
+- CRC Token + Wallet: MetaMask connect, balance, mint-on-recycle, Polygon Mumbai testnet ERC-20.
 
 **P1**
-- Ratings/reviews after closed deals.
-- Stripe-based secure escrow for deposits.
-- Rate-limit /api/ai/assist per user.
+- Multi-image upload + object storage for listings.
+- Seller public profile (`/profile/:id`) with reviews.
+- Real Alpha Vantage integration (swap simulator) once API key available.
+- Multi-language (EN / NL).
 
 **P2**
-- CRC wallet + on-chain provenance MVP.
-- Multi-language (EN / IT / HI / CN).
-- Logistics integration (Flexport / Maersk APIs).
-- Admin verification dashboard.
+- Factory/Recycling Reports module (CO₂, water savings, batches).
+- AI price prediction (cotton trend forecasting).
+- NFT certificates for recycled batches.
+- Logistics integrations (Flexport / Maersk).
+- Split server.py into modular routers (auth, listings, conversations, market, alerts).
 
 ## Test Credentials
 See `/app/memory/test_credentials.md`.

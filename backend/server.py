@@ -740,6 +740,8 @@ class AlertCreate(BaseModel):
 async def create_alert(payload: AlertCreate, current: dict = Depends(get_current_user)):
     if payload.direction not in {"above", "below"}:
         raise HTTPException(status_code=400, detail="direction must be 'above' or 'below'")
+    if payload.threshold <= 0:
+        raise HTTPException(status_code=400, detail="threshold must be > 0")
     doc = {
         "id": str(uuid.uuid4()),
         "user_id": current["id"],

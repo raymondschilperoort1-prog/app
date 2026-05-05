@@ -32,7 +32,7 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/trading" element={<Trading />} />
           </Routes>
-          <Toaster richColors position="top-right" />
+          <Toaster richColors position="top-right" toastOptions={{ style: { zIndex: 9999 } }} />
         </BrowserRouter>
       </AuthProvider>
     </div>
