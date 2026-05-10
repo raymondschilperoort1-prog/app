@@ -1,7 +1,12 @@
 import React from "react";
+import ReactDOM from "react-dom/client";
+import "./index.css";
+import App from "./App";
 
-function App() {
-  return <div>App loaded</div>;
-}
+const root = ReactDOM.createRoot(document.getElementById("root"));
 
-export default App;
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
