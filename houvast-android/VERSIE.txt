@@ -1,0 +1,5 @@
+Appnaam: Houvast
+Pakketnaam: nl.vertierkaartjes.houvast
+Versiecode: 1
+Versienaam: 1.0.0
+Target SDK: 36
