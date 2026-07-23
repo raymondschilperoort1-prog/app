@@ -1,0 +1,166 @@
+name: Build Houvast Android
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'houvast-android/**'
+      - '.github/workflows/houvast-android-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Broncode ophalen
+        uses: actions/checkout@v4
+
+      - name: Java 17 instellen
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Android SDK instellen
+        uses: android-actions/setup-android@v3
+
+      - name: Android API 36 installeren
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platforms;android-36' 'build-tools;35.0.0' 'platform-tools'
+
+      - name: Gradle 8.13 instellen
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Uploadsleutel genereren
+        id: signing
+        shell: bash
+        working-directory: houvast-android
+        run: |
+          set -euo pipefail
+
+          PASSWORD="$(openssl rand -hex 24)"
+          ALIAS='houvast-upload'
+          KEYSTORE="$PWD/upload-keystore.jks"
+
+          echo "::add-mask::$PASSWORD"
+
+          keytool -genkeypair \
+            -storetype JKS \
+            -keystore "$KEYSTORE" \
+            -storepass "$PASSWORD" \
+            -keypass "$PASSWORD" \
+            -alias "$ALIAS" \
+            -keyalg RSA \
+            -keysize 4096 \
+            -sigalg SHA256withRSA \
+            -validity 10000 \
+            -dname 'CN=Houvast, OU=Schilperoort Digital, O=Zippe International B.V., L=Uitgeest, ST=Noord-Holland, C=NL'
+
+          FINGERPRINT="$(keytool -list -v \
+            -keystore "$KEYSTORE" \
+            -storepass "$PASSWORD" \
+            -alias "$ALIAS" | awk -F'SHA256: ' '/SHA256:/{print $2; exit}')"
+
+          cat > HOUVAST-UPLOAD-SLEUTEL.txt <<TXT
+          HOUVAST ANDROID UPLOADSLEUTEL
+          ============================
+
+          Pakketnaam: nl.vertierkaartjes.houvast
+          Sleutelalias: $ALIAS
+          Keystorebestand: upload-keystore.jks
+          Keystorewachtwoord: $PASSWORD
+          Sleutelwachtwoord: $PASSWORD
+          SHA-256-vingerafdruk uploadsleutel: $FINGERPRINT
+
+          ZEER BELANGRIJK
+          Bewaar upload-keystore.jks en dit wachtwoordbestand permanent en veilig.
+          Commit deze bestanden nooit naar een openbare repository.
+          TXT
+
+          python3 - "$FINGERPRINT" <<'PY'
+          import json, sys
+          fingerprint=sys.argv[1]
+          statement=[{
+              "relation":[
+                  "delegate_permission/common.handle_all_urls"
+              ],
+              "target":{
+                  "namespace":"android_app",
+                  "package_name":"nl.vertierkaartjes.houvast",
+                  "sha256_cert_fingerprints":[fingerprint]
+              }
+          }]
+          with open('assetlinks-upload-key.json','w',encoding='utf-8') as f:
+              json.dump(statement,f,ensure_ascii=False,indent=2)
+              f.write('\n')
+          PY
+
+          cat > ASSETLINKS-UITLEG.txt <<TXT
+          Publiceer assetlinks.json op:
+          https://app.vertierkaartjes.nl/.well-known/assetlinks.json
+
+          Voor lokaal geïnstalleerde APK-tests kan assetlinks-upload-key.json worden gebruikt.
+          Voor installatie via Google Play moet assetlinks.json óók de volledige SHA-256-
+          vingerafdruk van de Play-app-ondertekeningssleutel bevatten. Die staat in:
+          Play Console > Beveiligd met Play > App-ondertekening.
+          TXT
+
+          echo "KEYSTORE_PATH=$KEYSTORE" >> "$GITHUB_ENV"
+          echo "KEYSTORE_PASSWORD=$PASSWORD" >> "$GITHUB_ENV"
+          echo "KEY_ALIAS=$ALIAS" >> "$GITHUB_ENV"
+          echo "KEY_PASSWORD=$PASSWORD" >> "$GITHUB_ENV"
+          echo "fingerprint=$FINGERPRINT" >> "$GITHUB_OUTPUT"
+
+      - name: Release bouwen
+        working-directory: houvast-android
+        run: gradle --no-daemon --stacktrace clean bundleRelease assembleRelease
+
+      - name: Releasebestanden benoemen en controleren
+        shell: bash
+        working-directory: houvast-android
+        run: |
+          set -euo pipefail
+
+          mkdir -p release
+          cp app/build/outputs/bundle/release/app-release.aab release/Houvast-release.aab
+          cp app/build/outputs/apk/release/app-release.apk release/Houvast-release.apk
+          cp upload-keystore.jks release/upload-keystore.jks
+          cp HOUVAST-UPLOAD-SLEUTEL.txt release/HOUVAST-UPLOAD-SLEUTEL.txt
+          cp assetlinks-upload-key.json release/assetlinks-upload-key.json
+          cp ASSETLINKS-UITLEG.txt release/ASSETLINKS-UITLEG.txt
+
+          jarsigner -verify -verbose -certs release/Houvast-release.aab >/dev/null
+
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+
+          "$APKSIGNER" verify --verbose --print-certs release/Houvast-release.apk \
+            > release/APK-ONDERTEKENING.txt
+
+          "$AAPT" dump badging release/Houvast-release.apk \
+            > release/APK-INFORMATIE.txt
+
+          grep -q "package: name='nl.vertierkaartjes.houvast'" release/APK-INFORMATIE.txt
+          grep -q "targetSdkVersion:'36'" release/APK-INFORMATIE.txt
+
+          sha256sum release/* > release/SHA256SUMS.txt
+
+          zip -qr release/Houvast-Android-broncode.zip \
+            app build.gradle settings.gradle gradle.properties README.md
+
+      - name: Buildartifact uploaden
+        uses: actions/upload-artifact@v4
+        with:
+          name: Houvast-Android-release
+          path: houvast-android/release/
+          if-no-files-found: error
+          retention-days: 30

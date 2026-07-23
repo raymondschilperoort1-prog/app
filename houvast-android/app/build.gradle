@@ -1,0 +1,62 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'nl.vertierkaartjes.houvast'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'nl.vertierkaartjes.houvast'
+        minSdk 23
+        targetSdk 36
+        versionCode 1
+        versionName '1.0.0'
+    }
+
+    def keystorePath = System.getenv('KEYSTORE_PATH')
+    def keystorePassword = System.getenv('KEYSTORE_PASSWORD')
+    def keyAliasValue = System.getenv('KEY_ALIAS')
+    def keyPasswordValue = System.getenv('KEY_PASSWORD')
+
+    if (keystorePath && keystorePassword && keyAliasValue && keyPasswordValue) {
+        signingConfigs {
+            release {
+                storeFile file(keystorePath)
+                storePassword keystorePassword
+                keyAlias keyAliasValue
+                keyPassword keyPasswordValue
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+        }
+        release {
+            minifyEnabled false
+            shrinkResources false
+            if (keystorePath && keystorePassword && keyAliasValue && keyPasswordValue) {
+                signingConfig signingConfigs.release
+            }
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    packaging {
+        resources {
+            excludes += ['/META-INF/{AL2.0,LGPL2.1}']
+        }
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}

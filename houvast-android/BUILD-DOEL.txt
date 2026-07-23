@@ -1,0 +1,3 @@
+Doel: ondertekende Android App Bundle voor interne test in Google Play Console.
+Website: https://app.vertierkaartjes.nl/
+Pakket: nl.vertierkaartjes.houvast

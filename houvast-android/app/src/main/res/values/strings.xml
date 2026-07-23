@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Houvast</string>
+    <string name="asset_statements" translatable="false">[{&quot;relation&quot;:[&quot;delegate_permission/common.handle_all_urls&quot;],&quot;target&quot;:{&quot;namespace&quot;:&quot;web&quot;,&quot;site&quot;:&quot;https://app.vertierkaartjes.nl&quot;}}]</string>
+</resources>
