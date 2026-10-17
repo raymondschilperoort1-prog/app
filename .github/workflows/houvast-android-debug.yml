@@ -1,4 +1,4 @@
-name: Houvast Android debug
+name: Houvast Android build
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
@@ -36,13 +36,20 @@ jobs:
         with:
           gradle-version: '8.13'
 
-      - name: Build debug APK
+      - name: Build debug APK and unsigned release AAB
         working-directory: houvast-android
-        run: gradle assembleDebug --stacktrace
+        run: gradle assembleDebug bundleRelease --stacktrace
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: Houvast-AdMob-debug-apk
           path: houvast-android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Upload unsigned release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: Houvast-AdMob-release-aab-unsigned
+          path: houvast-android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
